@@ -36,6 +36,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [ending, setEnding] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     apiFetch<Session & { messages: Message[] }>(`/sessions/${sessionId}`)
@@ -127,11 +128,35 @@ export default function ChatPage() {
         ];
       });
       setStreamingText("");
+      playTts(accumulated);
     } catch {
       setStreamingText("");
     } finally {
       setStreaming(false);
     }
+  }
+
+  async function playTts(text: string) {
+    if (!text.trim()) return;
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_URL}/v1/speech/tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text, voice: "alloy" }),
+      });
+      if (!response.ok) return;
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.play().catch(() => {});
+      audio.onended = () => URL.revokeObjectURL(url);
+    } catch {}
   }
 
   async function handleTranscribe(audioBlob: Blob): Promise<string> {
