@@ -116,19 +116,43 @@ export default function ChatPage() {
             } catch {}
             continue;
           }
-          try { const text = JSON.parse(data); accumulated += text; setStreamingText(accumulated); } catch {}
+          try {
+            const text = JSON.parse(data);
+            accumulated += text;
+            // Não exibe o bloco <corrections> durante o streaming
+            const displayText = accumulated.replace(/<corrections>[\s\S]*?(<\/corrections>)?$/g, "").trim();
+            setStreamingText(displayText);
+          } catch {}
         }
+      }
+
+      // Remove o bloco <corrections> do texto visível
+      const correctionMatch = accumulated.match(/<corrections>([\s\S]*?)<\/corrections>/);
+      const cleanContent = accumulated.replace(/<corrections>[\s\S]*?<\/corrections>/g, "").trim();
+
+      // Fallback: extrai correções do texto acumulado se [CORRECTIONS] não chegou
+      if (corrections.length === 0 && correctionMatch) {
+        try {
+          const parsed = JSON.parse(correctionMatch[1].trim());
+          corrections = (parsed.corrections || []).map((c: Record<string, string>, i: number) => ({
+            id: `c-${i}`,
+            original_text: c.original,
+            corrected_text: c.corrected,
+            error_type: c.type,
+            explanation: c.explanation,
+          }));
+        } catch {}
       }
 
       setMessages((prev) => {
         const withoutOptimistic = prev.filter((m) => m.id !== optimisticMsg.id);
         return [...withoutOptimistic,
           { ...optimisticMsg, id: `user-${Date.now()}` },
-          { id: `ai-${Date.now()}`, session_id: sessionId, role: "assistant", content: accumulated, audio_url: null, corrections, created_at: new Date().toISOString() },
+          { id: `ai-${Date.now()}`, session_id: sessionId, role: "assistant", content: cleanContent, audio_url: null, corrections, created_at: new Date().toISOString() },
         ];
       });
       setStreamingText("");
-      playTts(accumulated);
+      playTts(cleanContent);
     } catch {
       setStreamingText("");
     } finally {
