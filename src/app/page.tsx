@@ -1,9 +1,5 @@
-export default function LandingPage() {
-  return (
-    <main>
-      {/* TODO: implement landing page based on wireframes */}
-      <h1>FluentLoop</h1>
-      <p>Pratique inglês com IA</p>
-    </main>
-  );
+import { redirect } from "next/navigation";
+
+export default function RootPage() {
+  redirect("/dashboard");
 }
