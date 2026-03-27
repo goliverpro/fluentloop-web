@@ -1,7 +1,16 @@
 import { Scenario } from "@/types";
-import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import { clsx } from "clsx";
+
+const C = {
+  surface: "#111D35",
+  border: "#1E3050",
+  text: "#F1F5F9",
+  muted: "#94A3B8",
+  primary: "#006DB2",
+  success: "#10B981",
+  warning: "#F59E0B",
+  error: "#EF4444",
+};
 
 const CATEGORY_LABELS: Record<string, string> = {
   work: "Trabalho",
@@ -9,45 +18,66 @@ const CATEGORY_LABELS: Record<string, string> = {
   daily: "Cotidiano",
 };
 
-const DIFFICULTY_COLORS: Record<string, string> = {
-  A2: "text-[#10B981]",
-  B1: "text-yellow-400",
-  B2: "text-[#EF4444]",
+const DIFFICULTY_COLOR: Record<string, string> = {
+  A2: C.success,
+  B1: C.warning,
+  B2: C.error,
 };
 
-interface ScenarioCardProps {
-  scenario: Scenario;
-  onStart: (scenario: Scenario) => void;
-}
-
-export default function ScenarioCard({ scenario, onStart }: ScenarioCardProps) {
+export default function ScenarioCard({ scenario, onStart }: { scenario: Scenario; onStart: (s: Scenario) => void }) {
   return (
-    <div className="bg-[#1A1D27] border border-[#2D3148] rounded-xl p-5 flex flex-col gap-4 hover:border-[#6C63FF]/50 transition-colors">
-      <div className="flex items-start justify-between gap-3">
+    <div
+      style={{
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: "12px",
+        padding: "1.25rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "1rem",
+        transition: "border-color 0.15s",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(0,109,178,0.4)")}
+      onMouseLeave={(e) => (e.currentTarget.style.borderColor = C.border)}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
         <div>
-          <p className="font-medium text-[#E2E8F0]">{scenario.name}</p>
-          <p className="text-xs text-[#64748B] mt-1 leading-relaxed">{scenario.description}</p>
+          <p style={{ fontWeight: 600, color: C.text, fontSize: "0.9375rem" }}>{scenario.name}</p>
+          <p style={{ fontSize: "0.75rem", color: C.muted, marginTop: "4px", lineHeight: 1.5 }}>{scenario.description}</p>
         </div>
         {!scenario.is_free && (
-          <Badge variant="pro" className="shrink-0">
+          <span style={{
+            fontSize: "0.6875rem",
+            fontWeight: 600,
+            padding: "2px 8px",
+            borderRadius: "6px",
+            background: "rgba(245,158,11,0.12)",
+            color: C.warning,
+            flexShrink: 0,
+          }}>
             Pro
-          </Badge>
+          </span>
         )}
       </div>
 
-      <div className="flex items-center gap-2">
-        <Badge>{CATEGORY_LABELS[scenario.category] ?? scenario.category}</Badge>
-        <span className={clsx("text-xs font-medium", DIFFICULTY_COLORS[scenario.difficulty])}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <span style={{
+          fontSize: "0.6875rem",
+          fontWeight: 500,
+          padding: "2px 8px",
+          borderRadius: "6px",
+          background: "rgba(0,109,178,0.10)",
+          color: C.primary,
+        }}>
+          {CATEGORY_LABELS[scenario.category] ?? scenario.category}
+        </span>
+        <span style={{ fontSize: "0.75rem", fontWeight: 600, color: DIFFICULTY_COLOR[scenario.difficulty] ?? C.muted }}>
           {scenario.difficulty}
         </span>
-        <span className="text-xs text-[#64748B] truncate">• {scenario.ai_role}</span>
+        <span style={{ fontSize: "0.75rem", color: C.muted }}>• {scenario.ai_role}</span>
       </div>
 
-      <Button
-        size="sm"
-        onClick={() => onStart(scenario)}
-        className="w-full"
-      >
+      <Button size="sm" onClick={() => onStart(scenario)} style={{ width: "100%" }}>
         Iniciar conversa
       </Button>
     </div>

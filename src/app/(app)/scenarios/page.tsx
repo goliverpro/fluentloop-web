@@ -4,9 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { Scenario } from "@/types";
-import Header from "@/components/layout/Header";
 import ScenarioCard from "@/components/scenarios/ScenarioCard";
 import Spinner from "@/components/ui/Spinner";
+
+const C = {
+  surface: "#111D35",
+  border: "#1E3050",
+  text: "#F1F5F9",
+  muted: "#94A3B8",
+  primary: "#006DB2",
+};
 
 const CATEGORY_FILTERS = [
   { value: "all", label: "Todos" },
@@ -31,53 +38,65 @@ export default function ScenariosPage() {
   async function handleStart(scenario: Scenario) {
     const session = await apiFetch<{ id: string }>("/sessions/", {
       method: "POST",
-      body: JSON.stringify({
-        type: "roleplay",
-        pillar: "speaking",
-        scenario_id: scenario.id,
-      }),
+      body: JSON.stringify({ type: "roleplay", pillar: "speaking", scenario_id: scenario.id }),
     });
     router.push(`/chat/${session.id}`);
   }
 
-  const filtered =
-    filter === "all" ? scenarios : scenarios.filter((s) => s.category === filter);
+  const filtered = filter === "all" ? scenarios : scenarios.filter((s) => s.category === filter);
 
   return (
-    <>
-      <Header title="Cenários" subtitle="Escolha um cenário para praticar" />
+    <div style={{ maxWidth: "860px", margin: "0 auto", padding: "2rem 1.5rem", width: "100%" }}>
 
-      <div className="flex gap-2 mb-6">
-        {CATEGORY_FILTERS.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setFilter(f.value)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === f.value
-                ? "bg-[#6C63FF] text-white"
-                : "bg-[#1A1D27] text-[#64748B] hover:text-[#E2E8F0] border border-[#2D3148]"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+      {/* Header */}
+      <div style={{ marginBottom: "1.75rem" }}>
+        <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: C.text, marginBottom: "4px" }}>Cenários</h1>
+        <p style={{ fontSize: "0.875rem", color: C.muted }}>Escolha um cenário para praticar</p>
       </div>
 
+      {/* Filtros */}
+      <div style={{ display: "flex", gap: "8px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+        {CATEGORY_FILTERS.map((f) => {
+          const active = filter === f.value;
+          return (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              style={{
+                padding: "6px 16px",
+                borderRadius: "8px",
+                fontSize: "0.8125rem",
+                fontWeight: 500,
+                border: "none",
+                cursor: "pointer",
+                transition: "background 0.15s, color 0.15s",
+                background: active ? C.primary : C.surface,
+                color: active ? "#ffffff" : C.muted,
+                outline: active ? "none" : `1px solid ${C.border}`,
+              }}
+            >
+              {f.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Conteúdo */}
       {loading ? (
-        <div className="flex items-center justify-center min-h-64">
+        <div style={{ display: "flex", justifyContent: "center", padding: "4rem 0" }}>
           <Spinner size="lg" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-[#64748B]">
-          <p>Nenhum cenário disponível nesta categoria.</p>
+        <div style={{ textAlign: "center", padding: "4rem 0", color: C.muted, fontSize: "0.875rem" }}>
+          Nenhum cenário disponível nesta categoria.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1rem" }}>
           {filtered.map((scenario) => (
             <ScenarioCard key={scenario.id} scenario={scenario} onStart={handleStart} />
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -4,6 +4,21 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap");
 
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
@@ -12,12 +27,20 @@
 }
 
 :root {
-  --color-primary: #4f46e5;
-  --color-primary-dark: #3730a3;
-  --color-primary-light: #818cf8;
-  --color-primary-subtle: #eef2ff;
-  --color-accent: #06b6d4;
+  --color-primary: #006db2;
+  --color-primary-dark: #005490;
+  --color-primary-light: #0088dc;
+  --color-primary-subtle: #e6f3fa;
+  --color-accent: #00a3e0;
   --color-success: #10b981;
   --color-error: #ef4444;
   --color-warning: #f59e0b;
+
+  /* Dark theme tokens */
+  --bg-base: #0b1426;
+  --bg-surface: #111d35;
+  --bg-elevated: #162040;
+  --border-subtle: #1e3050;
+  --text-primary: #f1f5f9;
+  --text-muted: #94a3b8;
 }

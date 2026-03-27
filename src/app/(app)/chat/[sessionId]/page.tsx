@@ -8,9 +8,19 @@ import { Message, PronunciationWord, Session } from "@/types";
 import ChatMessage from "@/components/chat/ChatMessage";
 import ChatInput from "@/components/chat/ChatInput";
 import PronunciationFeedback from "@/components/chat/PronunciationFeedback";
-import Button from "@/components/ui/Button";
 import Spinner from "@/components/ui/Spinner";
 import { ArrowLeft, StopCircle } from "lucide-react";
+
+const C = {
+  bg: "#0B1426",
+  surface: "#111D35",
+  elevated: "#162040",
+  border: "#1E3050",
+  text: "#F1F5F9",
+  muted: "#94A3B8",
+  primary: "#006DB2",
+  error: "#EF4444",
+};
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -67,16 +77,11 @@ export default function ChatPage() {
       const token = await getAuthToken();
       const response = await fetch(`${API_URL}/v1/chat/message`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ session_id: sessionId, content, is_voice: isVoice }),
       });
 
-      if (!response.ok || !response.body) {
-        throw new Error("Stream failed");
-      }
+      if (!response.ok || !response.body) throw new Error("Stream failed");
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -86,72 +91,39 @@ export default function ChatPage() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
-
-        for (const line of lines) {
+        for (const line of chunk.split("\n")) {
           if (!line.startsWith("data: ")) continue;
           const data = line.slice(6);
-
           if (data === "[DONE]") break;
           if (data === "[LIMIT_REACHED]") {
             setStreamingText("");
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: `limit-${Date.now()}`,
-                session_id: sessionId,
-                role: "assistant",
-                content: "Você atingiu o limite diário de interações. Faça upgrade para continuar.",
-                audio_url: null,
-                corrections: [],
-                created_at: new Date().toISOString(),
-              },
-            ]);
+            setMessages((prev) => [...prev, {
+              id: `limit-${Date.now()}`, session_id: sessionId, role: "assistant",
+              content: "Você atingiu o limite diário de interações. Faça upgrade para continuar.",
+              audio_url: null, corrections: [], created_at: new Date().toISOString(),
+            }]);
             return;
           }
-          if (data.startsWith("[ERROR]")) {
-            setStreamingText("");
-            return;
-          }
+          if (data.startsWith("[ERROR]")) { setStreamingText(""); return; }
           if (data.startsWith("[CORRECTIONS]")) {
             try {
               corrections = JSON.parse(data.slice(13)).map((c: Record<string, string>, i: number) => ({
-                id: `c-${i}`,
-                original_text: c.original,
-                corrected_text: c.corrected,
-                error_type: c.type,
-                explanation: c.explanation,
+                id: `c-${i}`, original_text: c.original, corrected_text: c.corrected,
+                error_type: c.type, explanation: c.explanation,
               }));
             } catch {}
             continue;
           }
-
-          try {
-            const text = JSON.parse(data);
-            accumulated += text;
-            setStreamingText(accumulated);
-          } catch {}
+          try { const text = JSON.parse(data); accumulated += text; setStreamingText(accumulated); } catch {}
         }
       }
 
-      const aiMessage: Message = {
-        id: `ai-${Date.now()}`,
-        session_id: sessionId,
-        role: "assistant",
-        content: accumulated,
-        audio_url: null,
-        corrections,
-        created_at: new Date().toISOString(),
-      };
-
       setMessages((prev) => {
         const withoutOptimistic = prev.filter((m) => m.id !== optimisticMsg.id);
-        return [
-          ...withoutOptimistic,
+        return [...withoutOptimistic,
           { ...optimisticMsg, id: `user-${Date.now()}` },
-          aiMessage,
+          { id: `ai-${Date.now()}`, session_id: sessionId, role: "assistant", content: accumulated, audio_url: null, corrections, created_at: new Date().toISOString() },
         ];
       });
       setStreamingText("");
@@ -166,18 +138,12 @@ export default function ChatPage() {
     const token = await getAuthToken();
     const formData = new FormData();
     formData.append("audio", audioBlob, "recording.webm");
-
     const response = await fetch(`${API_URL}/v1/speech/transcribe`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
+      method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData,
     });
-
     if (!response.ok) return "";
     const data = await response.json();
-    if (data.words?.length > 0) {
-      setPronunciationWords(data.words);
-    }
+    if (data.words?.length > 0) setPronunciationWords(data.words);
     return data.text ?? "";
   }
 
@@ -193,89 +159,160 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0F1117]">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, background: C.bg }}>
         <Spinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#0F1117]">
-      <div className="bg-[#1A1D27] border-b border-[#2D3148] px-4 py-3 flex items-center gap-3">
+    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 56px)", background: C.bg }}>
+
+      {/* Header da sessão */}
+      <div style={{
+        background: C.surface,
+        borderBottom: `1px solid ${C.border}`,
+        padding: "10px 1.5rem",
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        flexShrink: 0,
+      }}>
         <button
           onClick={() => router.push("/dashboard")}
-          className="text-[#64748B] hover:text-[#E2E8F0] transition-colors"
+          style={{
+            background: "transparent",
+            border: "none",
+            color: C.muted,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            padding: "4px",
+            borderRadius: "6px",
+            transition: "color 0.15s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
+          onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft size={18} />
         </button>
-        <div className="flex-1">
-          <p className="text-sm font-medium text-[#E2E8F0]">
+
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: "0.875rem", fontWeight: 600, color: C.text }}>
             {session?.scenario_id ? "Roleplay" : "Chat livre"}
           </p>
-          <p className="text-xs text-[#64748B]">{messages.length} mensagens</p>
+          <p style={{ fontSize: "0.75rem", color: C.muted }}>{messages.length} mensagens</p>
         </div>
+
         {!session?.ended_at && (
-          <Button
-            variant="ghost"
-            size="sm"
-            loading={ending}
+          <button
             onClick={handleEndSession}
-            className="text-[#64748B] hover:text-[#EF4444]"
+            disabled={ending}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 12px",
+              borderRadius: "8px",
+              border: "none",
+              background: "transparent",
+              color: C.muted,
+              fontSize: "0.8125rem",
+              fontWeight: 500,
+              cursor: ending ? "not-allowed" : "pointer",
+              opacity: ending ? 0.5 : 1,
+              transition: "color 0.15s, background 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = C.error;
+              e.currentTarget.style.background = "rgba(239,68,68,0.08)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = C.muted;
+              e.currentTarget.style.background = "transparent";
+            }}
           >
-            <StopCircle className="w-4 h-4 mr-1" />
+            <StopCircle size={15} />
             Encerrar
-          </Button>
+          </button>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-        {messages.length === 0 && !streaming && (
-          <div className="flex items-center justify-center flex-1 text-[#64748B] text-sm">
-            Envie sua primeira mensagem para começar.
-          </div>
-        )}
-
-        {messages.map((msg) => (
-          <ChatMessage key={msg.id} message={msg} />
-        ))}
-
-        {streaming && streamingText && (
-          <div className="flex flex-col items-start gap-2">
-            <div className="max-w-[70%] bg-[#1A1D27] border border-[#2D3148] rounded-xl rounded-bl-sm px-4 py-3 text-sm text-[#E2E8F0] leading-relaxed">
-              {streamingText}
-              <span className="inline-block w-0.5 h-4 bg-[#6C63FF] animate-pulse ml-0.5 align-middle" />
+      {/* Mensagens */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "1.5rem" }}>
+        <div style={{ maxWidth: "700px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "1rem" }}>
+          {messages.length === 0 && !streaming && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "4rem 0", color: C.muted, fontSize: "0.875rem" }}>
+              Envie sua primeira mensagem para começar.
             </div>
-          </div>
-        )}
+          )}
 
-        {streaming && !streamingText && (
-          <div className="flex items-center gap-2 text-[#64748B] text-sm">
-            <Spinner size="sm" />
-            <span>Respondendo...</span>
-          </div>
-        )}
+          {messages.map((msg) => (
+            <ChatMessage key={msg.id} message={msg} />
+          ))}
 
-        <div ref={bottomRef} />
+          {streaming && streamingText && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "6px" }}>
+              <div style={{
+                maxWidth: "70%",
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: "16px 16px 16px 4px",
+                padding: "10px 14px",
+                fontSize: "0.875rem",
+                color: C.text,
+                lineHeight: 1.6,
+              }}>
+                {streamingText}
+                <span style={{
+                  display: "inline-block",
+                  width: "2px",
+                  height: "14px",
+                  background: C.primary,
+                  marginLeft: "2px",
+                  verticalAlign: "middle",
+                  animation: "pulse 1s ease-in-out infinite",
+                }} />
+              </div>
+            </div>
+          )}
+
+          {streaming && !streamingText && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: C.muted, fontSize: "0.875rem" }}>
+              <Spinner size="sm" />
+              <span>Respondendo...</span>
+            </div>
+          )}
+
+          <div ref={bottomRef} />
+        </div>
       </div>
 
+      {/* Feedback de pronúncia */}
       {pronunciationWords.length > 0 && (
-        <div className="px-4 pb-2">
+        <div style={{ padding: "0 1.5rem 8px", maxWidth: "700px", margin: "0 auto", width: "100%" }}>
           <PronunciationFeedback words={pronunciationWords} />
         </div>
       )}
 
+      {/* Input */}
       {!session?.ended_at && (
-        <div className="p-4 border-t border-[#2D3148]">
-          <ChatInput
-            onSend={handleSend}
-            disabled={streaming}
-            onTranscribe={handleTranscribe}
-          />
+        <div style={{ padding: "1rem 1.5rem", borderTop: `1px solid ${C.border}`, flexShrink: 0 }}>
+          <div style={{ maxWidth: "700px", margin: "0 auto" }}>
+            <ChatInput onSend={handleSend} disabled={streaming} onTranscribe={handleTranscribe} />
+          </div>
         </div>
       )}
 
       {session?.ended_at && (
-        <div className="p-4 border-t border-[#2D3148] text-center text-sm text-[#64748B]">
+        <div style={{
+          padding: "1rem",
+          borderTop: `1px solid ${C.border}`,
+          textAlign: "center",
+          fontSize: "0.875rem",
+          color: C.muted,
+          flexShrink: 0,
+        }}>
           Sessão encerrada.
         </div>
       )}

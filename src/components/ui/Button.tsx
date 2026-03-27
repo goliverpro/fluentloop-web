@@ -1,7 +1,6 @@
 "use client";
 
-import { ButtonHTMLAttributes, forwardRef } from "react";
-import { clsx } from "clsx";
+import { ButtonHTMLAttributes, CSSProperties, forwardRef, useState } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost" | "danger";
@@ -9,37 +8,69 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
+const BASE: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontWeight: 500,
+  borderRadius: "8px",
+  border: "none",
+  cursor: "pointer",
+  transition: "background 0.15s, opacity 0.15s",
+  outline: "none",
+};
+
+const SIZE: Record<string, CSSProperties> = {
+  sm: { fontSize: "0.75rem", padding: "0.375rem 0.75rem" },
+  md: { fontSize: "0.875rem", padding: "0.5rem 1rem" },
+  lg: { fontSize: "0.875rem", padding: "0.625rem 1rem", width: "100%" },
+};
+
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", loading, children, disabled, ...props }, ref) => {
+  ({ style, variant = "primary", size = "md", loading, children, disabled, onMouseEnter, onMouseLeave, ...props }, ref) => {
+    const [hovered, setHovered] = useState(false);
+
+    const variantStyle: CSSProperties =
+      variant === "primary"
+        ? { background: hovered ? "#005490" : "#006DB2", color: "#ffffff" }
+        : variant === "secondary"
+        ? {
+            background: hovered ? "#1a2a4a" : "#162040",
+            color: "#f1f5f9",
+            border: "1.5px solid #1e3050",
+          }
+        : variant === "ghost"
+        ? { background: hovered ? "#162040" : "transparent", color: hovered ? "#f1f5f9" : "#94a3b8" }
+        : { background: hovered ? "#dc2626" : "#EF4444", color: "#ffffff" };
+
     return (
       <button
         ref={ref}
         disabled={disabled || loading}
-        className={clsx(
-          "inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0F1117] disabled:opacity-50 disabled:cursor-not-allowed",
-          {
-            "bg-[#6C63FF] hover:bg-[#5a52d5] text-white focus:ring-[#6C63FF]": variant === "primary",
-            "bg-[#1A1D27] hover:bg-[#252836] text-[#E2E8F0] border border-[#2D3148] focus:ring-[#6C63FF]":
-              variant === "secondary",
-            "hover:bg-[#1A1D27] text-[#64748B] hover:text-[#E2E8F0] focus:ring-[#6C63FF]":
-              variant === "ghost",
-            "bg-[#EF4444] hover:bg-red-600 text-white focus:ring-red-500": variant === "danger",
-            "text-xs px-3 py-1.5": size === "sm",
-            "text-sm px-4 py-2": size === "md",
-            "text-base px-6 py-3": size === "lg",
-          },
-          className
-        )}
+        style={{
+          ...BASE,
+          ...SIZE[size],
+          ...variantStyle,
+          ...(disabled || loading ? { opacity: 0.5, cursor: "not-allowed" } : {}),
+          ...style,
+        }}
+        onMouseEnter={(e) => {
+          setHovered(true);
+          onMouseEnter?.(e);
+        }}
+        onMouseLeave={(e) => {
+          setHovered(false);
+          onMouseLeave?.(e);
+        }}
         {...props}
       >
         {loading ? (
-          <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
+          <svg
+            style={{ animation: "spin 1s linear infinite", marginRight: "0.5rem", flexShrink: 0 }}
+            width="16" height="16" fill="none" viewBox="0 0 24 24"
+          >
+            <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
         ) : null}
         {children}

@@ -1,7 +1,17 @@
 import Link from "next/link";
 import { Session } from "@/types";
-import Badge from "@/components/ui/Badge";
 import { MessageSquare, Clock } from "lucide-react";
+
+const C = {
+  surface: "#111D35",
+  border: "#1E3050",
+  text: "#F1F5F9",
+  muted: "#94A3B8",
+  primary: "#006DB2",
+  success: "#10B981",
+  warning: "#F59E0B",
+  error: "#EF4444",
+};
 
 const PILLAR_LABELS: Record<string, string> = {
   speaking: "Fala",
@@ -16,52 +26,64 @@ function formatDuration(start: string, end: string | null): string {
   return mins < 1 ? "< 1 min" : `${mins} min`;
 }
 
-interface SessionCardProps {
-  session: Session;
+function errorColor(rate: number | null) {
+  if (rate === null) return C.muted;
+  if (rate < 20) return C.success;
+  if (rate < 40) return C.warning;
+  return C.error;
 }
 
-export default function SessionCard({ session }: SessionCardProps) {
-  const errorRateVariant =
-    session.error_rate === null
-      ? "default"
-      : session.error_rate < 20
-      ? "success"
-      : session.error_rate < 40
-      ? "warning"
-      : "error";
-
+export default function SessionCard({ session }: { session: Session }) {
   return (
     <Link
       href={`/chat/${session.id}`}
-      className="block bg-[#1A1D27] border border-[#2D3148] rounded-xl p-4 hover:border-[#6C63FF]/50 transition-colors"
+      style={{
+        display: "block",
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: "12px",
+        padding: "1rem 1.25rem",
+        textDecoration: "none",
+        transition: "border-color 0.15s",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(0,109,178,0.4)")}
+      onMouseLeave={(e) => (e.currentTarget.style.borderColor = C.border)}
     >
-      <div className="flex items-start justify-between gap-3 mb-3">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem", gap: "8px" }}>
         <div>
-          <p className="font-medium text-[#E2E8F0] text-sm">
+          <p style={{ fontWeight: 600, color: C.text, fontSize: "0.875rem" }}>
             {session.scenario_name ?? "Chat livre"}
           </p>
-          <p className="text-xs text-[#64748B] mt-0.5">
-            {new Date(session.started_at).toLocaleDateString("pt-BR", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })}
+          <p style={{ fontSize: "0.75rem", color: C.muted, marginTop: "2px" }}>
+            {new Date(session.started_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
           </p>
         </div>
-        <Badge>{PILLAR_LABELS[session.pillar] ?? session.pillar}</Badge>
+        <span style={{
+          fontSize: "0.6875rem",
+          fontWeight: 500,
+          padding: "2px 8px",
+          borderRadius: "6px",
+          background: "rgba(0,109,178,0.12)",
+          color: C.primary,
+          flexShrink: 0,
+        }}>
+          {PILLAR_LABELS[session.pillar] ?? session.pillar}
+        </span>
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-[#64748B]">
-        <span className="flex items-center gap-1">
-          <MessageSquare className="w-3 h-3" />
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "0.75rem", color: C.muted }}>
+        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <MessageSquare size={12} />
           {session.total_messages ?? 0} msgs
         </span>
-        <span className="flex items-center gap-1">
-          <Clock className="w-3 h-3" />
+        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <Clock size={12} />
           {formatDuration(session.started_at, session.ended_at)}
         </span>
         {session.error_rate !== null && (
-          <Badge variant={errorRateVariant}>{session.error_rate}% erros</Badge>
+          <span style={{ color: errorColor(session.error_rate), fontWeight: 500 }}>
+            {session.error_rate}% erros
+          </span>
         )}
       </div>
     </Link>

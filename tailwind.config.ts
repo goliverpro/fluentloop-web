@@ -11,15 +11,15 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#4F46E5",
-          dark: "#3730A3",
-          light: "#818CF8",
-          subtle: "#EEF2FF",
+          DEFAULT: "#006DB2",
+          dark: "#005490",
+          light: "#0088DC",
+          subtle: "#E6F3FA",
         },
         accent: {
-          DEFAULT: "#06B6D4",
-          dark: "#0891B2",
-          subtle: "#ECFEFF",
+          DEFAULT: "#00A3E0",
+          dark: "#0082B3",
+          subtle: "#E0F4FF",
         },
         success: {
           DEFAULT: "#10B981",
@@ -45,7 +45,7 @@ const config: Config = {
         xl: "24px",
       },
       boxShadow: {
-        focus: "0 0 0 3px rgba(79, 70, 229, 0.3)",
+        focus: "0 0 0 3px rgba(0, 109, 178, 0.3)",
       },
     },
   },

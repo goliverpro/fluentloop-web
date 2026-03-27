@@ -1,33 +1,94 @@
 "use client";
 
-import { InputHTMLAttributes, forwardRef } from "react";
-import { clsx } from "clsx";
+import { InputHTMLAttributes, forwardRef, ReactNode, useState } from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  leftIcon?: ReactNode;
+  variant?: "dark" | "light";
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, id, ...props }, ref) => {
+  ({ className, label, error, id, leftIcon, variant = "dark", onFocus, onBlur, ...props }, ref) => {
+    const [focused, setFocused] = useState(false);
+    const isLight = variant === "light";
+
+    const borderColor = error
+      ? "#EF4444"
+      : focused
+      ? "#006DB2"
+      : isLight
+      ? "#d1d5db"
+      : "#1e3050";
+
+    const boxShadow = focused
+      ? "0 0 0 3px rgba(0, 109, 178, 0.15)"
+      : "none";
+
     return (
-      <div className="flex flex-col gap-1.5">
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
         {label && (
-          <label htmlFor={id} className="text-sm font-medium text-[#E2E8F0]">
+          <label
+            htmlFor={id}
+            style={{
+              fontSize: "0.8125rem",
+              fontWeight: 500,
+              color: isLight ? "#64748b" : "#94a3b8",
+            }}
+          >
             {label}
           </label>
         )}
-        <input
-          ref={ref}
-          id={id}
-          className={clsx(
-            "w-full px-4 py-2.5 rounded-lg bg-[#1A1D27] border text-[#E2E8F0] placeholder-[#64748B] text-sm focus:outline-none focus:ring-2 focus:ring-[#6C63FF] transition-colors",
-            error ? "border-[#EF4444]" : "border-[#2D3148]",
-            className
+        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+          {leftIcon && (
+            <span
+              style={{
+                position: "absolute",
+                left: "12px",
+                display: "flex",
+                alignItems: "center",
+                color: focused ? "#006DB2" : "#94a3b8",
+                pointerEvents: "none",
+                transition: "color 0.15s",
+              }}
+            >
+              {leftIcon}
+            </span>
           )}
-          {...props}
-        />
-        {error && <p className="text-xs text-[#EF4444]">{error}</p>}
+          <input
+            ref={ref}
+            id={id}
+            className={className}
+            onFocus={(e) => {
+              setFocused(true);
+              onFocus?.(e);
+            }}
+            onBlur={(e) => {
+              setFocused(false);
+              onBlur?.(e);
+            }}
+            style={{
+              width: "100%",
+              paddingTop: "0.625rem",
+              paddingBottom: "0.625rem",
+              paddingLeft: leftIcon ? "2.5rem" : "0.875rem",
+              paddingRight: "0.875rem",
+              fontSize: "0.875rem",
+              borderRadius: "8px",
+              border: `1.5px solid ${borderColor}`,
+              background: isLight ? "#ffffff" : "#162040",
+              color: isLight ? "#1e293b" : "#f1f5f9",
+              outline: "none",
+              boxShadow,
+              transition: "border-color 0.15s, box-shadow 0.15s",
+            }}
+            {...props}
+          />
+        </div>
+        {error && (
+          <p style={{ fontSize: "0.75rem", color: "#EF4444" }}>{error}</p>
+        )}
       </div>
     );
   }
