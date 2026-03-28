@@ -13,6 +13,7 @@ const C = {
   text: "#F1F5F9",
   muted: "#94A3B8",
   primary: "#006DB2",
+  warning: "#F59E0B",
 };
 
 const CATEGORY_FILTERS = [
@@ -20,6 +21,7 @@ const CATEGORY_FILTERS = [
   { value: "work", label: "Trabalho" },
   { value: "travel", label: "Viagem" },
   { value: "daily", label: "Cotidiano" },
+  { value: "pro", label: "PRO" },
 ];
 
 export default function ScenariosPage() {
@@ -43,7 +45,13 @@ export default function ScenariosPage() {
     router.push(`/chat/${session.id}`);
   }
 
-  const filtered = filter === "all" ? scenarios : scenarios.filter((s) => s.category === filter);
+  const hasPro = scenarios.some((s) => !s.is_free);
+  const visibleFilters = hasPro ? CATEGORY_FILTERS : CATEGORY_FILTERS.filter((f) => f.value !== "pro");
+
+  const filtered =
+    filter === "all" ? scenarios
+    : filter === "pro" ? scenarios.filter((s) => !s.is_free)
+    : scenarios.filter((s) => s.category === filter);
 
   return (
     <div style={{ maxWidth: "860px", margin: "0 auto", padding: "2rem 1.5rem", width: "100%" }}>
@@ -56,7 +64,7 @@ export default function ScenariosPage() {
 
       {/* Filtros */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-        {CATEGORY_FILTERS.map((f) => {
+        {visibleFilters.map((f) => {
           const active = filter === f.value;
           return (
             <button
@@ -70,9 +78,9 @@ export default function ScenariosPage() {
                 border: "none",
                 cursor: "pointer",
                 transition: "background 0.15s, color 0.15s",
-                background: active ? C.primary : C.surface,
-                color: active ? "#ffffff" : C.muted,
-                outline: active ? "none" : `1px solid ${C.border}`,
+                background: active ? (f.value === "pro" ? C.warning : C.primary) : C.surface,
+                color: active ? "#ffffff" : f.value === "pro" ? C.warning : C.muted,
+                outline: active ? "none" : f.value === "pro" ? `1px solid rgba(245,158,11,0.3)` : `1px solid ${C.border}`,
               }}
             >
               {f.label}
